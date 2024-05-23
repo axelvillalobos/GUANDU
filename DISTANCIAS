@@ -1,0 +1,36 @@
+# clear workplace
+rm(list =ls())
+
+# Cargando las bibliotecas necesarias
+library(ape)
+library(phangorn)
+
+# Leyendo la matriz de distancias desde el archivo
+matriz <- read.table("MATRIZ.txt", header = TRUE, row.names = 1)
+
+# Convirtiendo la matriz a un objeto "dist"
+dist_matriz <- as.dist(matriz)
+
+# Construyendo el árbol con UPGMA
+arbol_upgma <- upgma(dist_matriz)
+
+# Graficando el árbol
+plot(arbol_upgma, main="Árbol DE Distancias Método UPGMA")
+
+
+# Cargando las bibliotecas necesarias
+library(ape)
+library(phangorn)
+
+# Leyendo la matriz de distancias desde el archivo
+matriz <- read.table("MATRIZ.txt", header = TRUE, row.names = 1)
+
+# Convirtiendo la matriz a un objeto "dist"
+dist_matriz <- as.dist(matriz)
+
+# Construyendo el árbol con Neighbor Joining
+arbol_nj <- nj(dist_matriz)
+
+# Graficando el árbol
+plot(arbol_nj, main="Árbol Neighbor Joining")
+
