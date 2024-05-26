@@ -34,3 +34,55 @@ plt.ylabel('Principal Component 2')
 plt.title('PCA of Microsatellite Data')
 plt.grid(True)
 plt.show()
+
+#
+import pandas as pd
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+import matplotlib.pyplot as plt
+
+# Load the data from the Excel file
+file_path = '/mnt/data/data.xlsx'
+data = pd.read_excel(file_path)
+
+# Ensure continuity: Fill missing values with the mean of each column
+data_filled = data.fillna(data.mean(numeric_only=True))
+
+# Extract numerical columns starting from the third column onwards
+numerical_data = data_filled.iloc[:, 2:]
+
+# Standardize the data
+scaler = StandardScaler()
+normalized_data = scaler.fit_transform(numerical_data)
+
+# Perform PCA
+pca = PCA(n_components=2)
+principal_components = pca.fit_transform(normalized_data)
+
+# Create a DataFrame for the principal components
+pca_df = pd.DataFrame(data=principal_components, columns=['PC1', 'PC2'])
+final_df = pd.concat([data[['ID', 'MARKER']], pca_df], axis=1)
+
+# Explained variance
+explained_variance = pca.explained_variance_ratio_
+
+# Print the explained variance
+print("Explained variance by each component:")
+for i, var in enumerate(explained_variance, 1):
+    print(f"PC{i}: {var:.2f}")
+
+# Plot the PCA results
+plt.figure(figsize=(10, 6))
+plt.scatter(final_df['PC1'], final_df['PC2'])
+
+# Annotate points with ID
+for i, txt in enumerate(final_df['ID']):
+    plt.annotate(txt, (final_df['PC1'][i], final_df['PC2'][i]))
+
+plt.xlabel('Principal Component 1')
+plt.ylabel('Principal Component 2')
+plt.title('PCA of Microsatellite Data')
+plt.grid(True)
+plt.show()
+
+
