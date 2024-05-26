@@ -1,0 +1,54 @@
+import pandas as pd
+
+# Load the Excel file into a pandas DataFrame
+df = pd.read_excel('data.xlsx')
+
+# Display the first few rows of the dataframe to understand its structure
+df.head()
+
+from itertools import chain
+import numpy as np
+
+# Function to calculate allele frequencies for each marker
+def calculate_allele_frequencies(df):
+    # Remove non-allele columns and stack all allele values into a single column
+    allele_values = df.drop(columns=['ID', 'MARKER']).stack().values
+
+    # Calculate allele frequencies
+    allele_counts = pd.Series(allele_values).value_counts()
+    total_alleles = allele_counts.sum()
+    allele_freqs = allele_counts / total_alleles
+
+    return allele_freqs
+
+# Group the data by marker and apply the allele frequency calculation function
+allele_frequencies_by_marker = df.groupby('MARKER').apply(calculate_allele_frequencies)
+
+# Now we will calculate Ho and He for each marker
+def calculate_ho_he(marker_group):
+    # Count heterozygotes for each row (individual)
+    heterozygotes_count = marker_group.apply(lambda row: row.count() - row.nunique(), axis=1)
+    # Calculate Ho as the number of heterozygotes over the total
+    ho = heterozygotes_count.mean()
+
+    # Get the allele frequencies for this marker
+    allele_freqs = allele_frequencies_by_marker.loc[marker_group.name]
+
+    # Calculate He using the allele frequencies (He = 1 - sum(p^2) for p in allele frequencies)
+    he = 1 - sum(allele_freqs ** 2)
+
+    return pd.Series({'Ho': ho, 'He': he})
+
+# Calculate Ho and He for each marker
+ho_he_by_marker = df.groupby('MARKER').apply(calculate_ho_he)
+
+# Calculate F_IS for each marker
+# F_IS = (He - Ho) / He
+f_is_by_marker = (ho_he_by_marker['He'] - ho_he_by_marker['Ho']) / ho_he_by_marker['He']
+
+# The overall F_IT and F_ST require calculations across all markers, which we'll perform next.
+# For now, let's check the allele frequencies, Ho, He, and F_IS for each marker
+allele_frequencies_by_marker, ho_he_by_marker, f_is_by_marker
+
+allele_frequencies_by_marker, ho_he_by_marker, f_is_by_marker.to_excel("frecuencias.xlsx", index=False)
+
