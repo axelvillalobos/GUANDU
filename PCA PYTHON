@@ -1,3 +1,63 @@
+1. Import necessary libraries (pandas, numpy, sklearn).
+2. Load the data from the Excel file.
+3. Handle missing values (e.g., impute with mean or remove rows/columns with excessive missing values).
+4. Normalize the data (StandardScaler from sklearn).
+5. Perform PCA (PCA from sklearn).
+6. Extract and print the principal components and explained variance.
+7. Visualize the results (if necessary, using matplotlib or seaborn).
+
+
+import pandas as pd
+
+# Load the data from the uploaded Excel file
+file_path = 'data.xlsx'
+data = pd.read_excel(file_path)
+
+# Display the first few rows of the dataset to understand its structure
+data.head()
+
+
+import pandas as pd
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+import matplotlib.pyplot as plt
+
+# Load the data
+file_path = 'data.xlsx'
+data = pd.read_excel(file_path)
+
+# Data Cleaning: Replace missing values with the mean of the column
+data_filled = data.fillna(data.mean(numeric_only=True))
+
+# Select only numerical columns for PCA
+numerical_data = data_filled.iloc[:, 2:]  # Assuming the first two columns are ID and MARKER
+
+# Standardize the data
+scaler = StandardScaler()
+normalized_data = scaler.fit_transform(numerical_data)
+
+# Perform PCA
+pca = PCA(n_components=2)  # Adjust the number of components as needed
+principal_components = pca.fit_transform(normalized_data)
+
+# Create a DataFrame for the principal components
+pca_df = pd.DataFrame(data=principal_components, columns=['PC1', 'PC2'])
+
+# Concatenate with the original ID and MARKER columns
+final_df = pd.concat([data[['ID', 'MARKER']], pca_df], axis=1)
+
+# Print the explained variance ratio
+explained_variance = pca.explained_variance_ratio_
+print("Explained Variance Ratio:", explained_variance)
+
+# Plot the PCA results
+plt.figure(figsize=(10, 6))
+plt.scatter(final_df['PC1'], final_df['PC2'])
+plt.xlabel('Principal Component 1')
+plt.ylabel('Principal Component 2')
+plt.title('PCA of Microsatellite Data')
+plt.show()
+
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
@@ -34,21 +94,12 @@ plt.ylabel('Principal Component 2')
 plt.title('PCA of Microsatellite Data')
 plt.grid(True)
 plt.show()
-
-#
-import pandas as pd
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 
-# Load the data from the Excel file
-file_path = '/mnt/data/data.xlsx'
-data = pd.read_excel(file_path)
-
-# Ensure continuity: Fill missing values with the mean of each column
+# Ensure continuity: Load and clean the data again
 data_filled = data.fillna(data.mean(numeric_only=True))
-
-# Extract numerical columns starting from the third column onwards
 numerical_data = data_filled.iloc[:, 2:]
 
 # Standardize the data
@@ -65,11 +116,6 @@ final_df = pd.concat([data[['ID', 'MARKER']], pca_df], axis=1)
 
 # Explained variance
 explained_variance = pca.explained_variance_ratio_
-
-# Print the explained variance
-print("Explained variance by each component:")
-for i, var in enumerate(explained_variance, 1):
-    print(f"PC{i}: {var:.2f}")
 
 # Plot the PCA results
 plt.figure(figsize=(10, 6))
