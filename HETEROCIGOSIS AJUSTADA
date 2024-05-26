@@ -1,0 +1,74 @@
+import pandas as pd
+
+# Load the provided Excel file
+file_path = '/mnt/data/data.xlsx'
+df_long = pd.read_excel(file_path, 'DATA')
+
+# Create a heterozygous indicator
+def is_heterozygous(row):
+    alleles = row[['ALELO 1', 'ALELO 2', 'ALELO 3', 'ALELO 4', 'ALELO 5', 'ALELO 6', 'ALELO 7']]
+    unique_alleles = alleles.dropna().unique()
+    return len(unique_alleles) > 1
+
+df_long['HETEROZYGOUS'] = df_long.apply(is_heterozygous, axis=1)
+
+# Calculate observed heterozygosity (Ho)
+cultivar_ho = df_long.groupby(['ID', 'MARKER'])['HETEROZYGOUS'].mean().reset_index()
+cultivar_ho = cultivar_ho.groupby('ID')['HETEROZYGOUS'].mean().reset_index(name='Ho')
+
+# Calculate allele frequencies per cultivar
+allele_counts = df_long.melt(id_vars=['ID', 'MARKER'], value_vars=['ALELO 1', 'ALELO 2', 'ALELO 3', 'ALELO 4', 'ALELO 5', 'ALELO 6', 'ALELO 7'])
+allele_counts = allele_counts.dropna().groupby(['ID', 'MARKER', 'value']).size().reset_index(name='count')
+allele_counts['freq'] = allele_counts.groupby(['ID', 'MARKER'])['count'].transform(lambda x: x / x.sum())
+allele_counts['p_squared'] = allele_counts['freq'] ** 2
+
+# Calculate expected heterozygosity (He) per cultivar and marker
+he_by_marker_cultivar = allele_counts.groupby(['ID', 'MARKER']).apply(lambda x: 1 - x['p_squared'].sum()).reset_index(name='He')
+
+# Average He by cultivar
+cultivar_he = he_by_marker_cultivar.groupby('ID')['He'].mean().reset_index()
+
+# Merge Ho and He
+cultivar_heterozygosity = cultivar_ho.merge(cultivar_he, on='ID')
+
+# Display the result
+import ace_tools as tools; tools.display_dataframe_to_user(name="Cultivar Heterozygosity", dataframe=cultivar_heterozygosity)
+cultivar_heterozygosity.head(9)
+
+
+import pandas as pd
+
+# Load the provided Excel file
+file_path = '/mnt/data/data.xlsx'
+df_long = pd.read_excel(file_path, 'DATA')
+
+# Create a heterozygous indicator
+def is_heterozygous(row):
+    alleles = row[['ALELO 1', 'ALELO 2', 'ALELO 3', 'ALELO 4', 'ALELO 5', 'ALELO 6', 'ALELO 7']]
+    unique_alleles = alleles.dropna().unique()
+    return len(unique_alleles) > 1
+
+df_long['HETEROZYGOUS'] = df_long.apply(is_heterozygous, axis=1)
+
+# Calculate observed heterozygosity (Ho)
+cultivar_ho = df_long.groupby(['ID', 'MARKER'])['HETEROZYGOUS'].mean().reset_index()
+cultivar_ho = cultivar_ho.groupby('ID')['HETEROZYGOUS'].mean().reset_index(name='Ho')
+
+# Calculate allele frequencies per cultivar
+allele_counts = df_long.melt(id_vars=['ID', 'MARKER'], value_vars=['ALELO 1', 'ALELO 2', 'ALELO 3', 'ALELO 4', 'ALELO 5', 'ALELO 6', 'ALELO 7'])
+allele_counts = allele_counts.dropna().groupby(['ID', 'MARKER', 'value']).size().reset_index(name='count')
+allele_counts['freq'] = allele_counts.groupby(['ID', 'MARKER'])['count'].transform(lambda x: x / x.sum())
+allele_counts['p_squared'] = allele_counts['freq'] ** 2
+
+# Calculate expected heterozygosity (He) per cultivar and marker
+he_by_marker_cultivar = allele_counts.groupby(['ID', 'MARKER']).apply(lambda x: 1 - x['p_squared'].sum()).reset_index(name='He')
+
+# Average He by cultivar
+cultivar_he = he_by_marker_cultivar.groupby('ID')['He'].mean().reset_index()
+
+# Merge Ho and He
+cultivar_heterozygosity = cultivar_ho.merge(cultivar_he, on='ID')
+
+# Display the result
+import ace_tools as tools; tools.display_dataframe_to_user(name="Cultivar Heterozygosity", dataframe=cultivar_heterozygosity)
+cultivar_heterozygosity.head(9)
