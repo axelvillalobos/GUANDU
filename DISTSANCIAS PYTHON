@@ -1,0 +1,79 @@
+# Reestructurando los datos
+# Combinaré los alelos en un solo valor para cada marcador y cultivar. 
+# Esto se puede hacer concatenando los alelos como una cadena de texto, lo que nos permitirá calcular distancias más adelante.
+
+# Combinando los alelos
+data_df['Combined_Alelos'] = data_df.filter(regex='ALELO').apply(lambda x: ','.join(x.dropna().astype(str)), axis=1)
+
+# Creando un DataFrame pivotado donde cada fila representa un cultivar y cada columna un marcador
+pivot_df = data_df.pivot(index='Sample', columns='Marker', values='Combined_Alelos')
+
+# Rellenando los valores faltantes con una cadena vacía para evitar problemas en el cálculo de la distancia
+pivot_df = pivot_df.fillna('')
+
+pivot_df.head()
+
+from sklearn.feature_extraction.text import CountVectorizer
+from scipy.spatial.distance import pdist, squareform
+
+# Utilizando CountVectorizer para convertir las cadenas de alelos en vectores de características
+vectorizer = CountVectorizer(tokenizer=lambda x: x.split(','))
+
+# Aplicando la transformación a cada columna/marcador
+alelo_vectors = vectorizer.fit_transform(pivot_df.values.flatten()).toarray()
+
+# Reshape the alelo_vectors to match the original DataFrame shape
+reshaped_vectors = alelo_vectors.reshape(pivot_df.shape[0], -1)
+
+# Calculando la matriz de distancias utilizando la distancia euclidiana
+distance_matrix = pdist(reshaped_vectors, metric='euclidean')
+
+# Convirtiendo la matriz de distancias en un formato cuadrado para facilitar su visualización y uso posterior
+square_distance_matrix = squareform(distance_matrix)
+
+# Creando un DataFrame para la matriz de distancias
+distance_df = pd.DataFrame(square_distance_matrix, index=pivot_df.index, columns=pivot_df.index)
+
+distance_df
+
+distance_df.to_excel("matriz.xlsx", sheet_name="Mis datos")
+
+
+from scipy.cluster.hierarchy import linkage, dendrogram
+import matplotlib.pyplot as plt
+
+# Usando la matriz de distancias para construir un árbol de enlace jerárquico
+linked = linkage(distance_matrix, method='average')
+
+# Creando un dendrograma para visualizar el árbol
+plt.figure(figsize=(10, 7))
+dendrogram(linked, labels=pivot_df.index, orientation='top', distance_sort='descending', show_leaf_counts=True)
+plt.title('Árbol de Distancias de Cultivares de Guandú')
+plt.xlabel('Cultivares')
+plt.ylabel('')
+plt.show()
+
+from sklearn.feature_extraction.text import CountVectorizer
+from scipy.spatial.distance import pdist, squareform
+
+# Utilizando CountVectorizer para convertir las cadenas de alelos en vectores de características
+vectorizer = CountVectorizer(tokenizer=lambda x: x.split(','))
+
+# Aplicando la transformación a cada columna/marcador
+alelo_vectors = vectorizer.fit_transform(pivot_df.values.flatten()).toarray()
+
+# Reshape the alelo_vectors to match the original DataFrame shape
+reshaped_vectors = alelo_vectors.reshape(pivot_df.shape[0], -1)
+
+# Calculando la matriz de distancias utilizando la distancia euclidiana
+distance_matrix = pdist(reshaped_vectors, metric='euclidean')
+
+# Convirtiendo la matriz de distancias en un formato cuadrado para facilitar su visualización y uso posterior
+square_distance_matrix = squareform(distance_matrix)
+
+# Creando un DataFrame para la matriz de distancias
+distance_df = pd.DataFrame(square_distance_matrix, index=pivot_df.index, columns=pivot_df.index)
+
+distance_df
+
+
