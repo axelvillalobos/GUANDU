@@ -1,0 +1,116 @@
+import pandas as pd
+
+# Load the data from the uploaded Excel file
+file_path = 'data.xlsx'
+data = pd.read_excel(file_path)
+
+# Display the first few rows of the dataframe to understand its structure
+data.head()
+
+
+# Import necessary libraries for calculations
+import numpy as np
+
+# Preparing the data for frequency calculation
+# Melting the dataframe to make it long format
+df_long = data.melt(id_vars=["ID", "MARKER"], value_vars=[f"ALELO {i}" for i in range(1, 8)],
+                    var_name="ALELO", value_name="VALUE").dropna()
+
+# Calculating the frequency of each allele for each marker
+allele_frequencies = df_long.groupby(["MARKER", "VALUE"]).size().reset_index(name='COUNT')
+
+# Calculating the total counts of alleles for each marker
+total_allele_counts = allele_frequencies.groupby("MARKER")["COUNT"].sum().reset_index(name="TOTAL")
+
+# Merging with the total counts to calculate frequencies
+allele_frequencies = allele_frequencies.merge(total_allele_counts, on="MARKER")
+allele_frequencies["FREQUENCY"] = allele_frequencies["COUNT"] / allele_frequencies["TOTAL"]
+
+allele_frequencies.head()
+
+
+# Calculating observed heterozygosity (Ho)
+# Counting the number of heterozygotes for each marker in each individual
+df_long['HETEROZYGOUS'] = df_long.groupby(['ID', 'MARKER'])['VALUE'].transform('nunique') > 1
+obs_heterozygosity = df_long.groupby('MARKER')['HETEROZYGOUS'].mean().reset_index(name='Ho')
+
+# Calculating expected heterozygosity (He)
+# We already have allele frequencies, we can use them to calculate He
+allele_frequencies['p_squared'] = allele_frequencies['FREQUENCY'] ** 2
+exp_heterozygosity = allele_frequencies.groupby('MARKER')['p_squared'].sum().reset_index()
+exp_heterozygosity['He'] = 1 - exp_heterozygosity['p_squared']
+exp_heterozygosity = exp_heterozygosity[['MARKER', 'He']]
+
+
+# Merging observed and expected heterozygosity
+heterozygosity = obs_heterozygosity.merge(exp_heterozygosity, on='MARKER')
+
+heterozygosity.head(11)
+
+heterozygosity.to_excel("heterozygosity.xlsx", index=False)
+
+
+# Calculating observed heterozygosity (Ho) per cultivar
+# We already have a heterozygous indicator column in df_long, we can use it
+cultivar_ho = df_long.groupby(['ID', 'MARKER'])['HETEROZYGOUS'].mean().reset_index()
+cultivar_ho = cultivar_ho.groupby('ID')['HETEROZYGOUS'].mean().reset_index(name='Ho')
+
+# For expected heterozygosity (He) per cultivar, it's more complicated as we need to take into account the allele frequencies
+# We will calculate He for each cultivar and each marker, then average them for each cultivar
+def calculate_cultivar_he(cultivar, marker):
+    # Filter the allele frequencies for the marker
+    marker_alleles = allele_frequencies[allele_frequencies['MARKER'] == marker]
+    # Calculate He for the marker
+    he = 1 - sum(marker_alleles['p_squared'])
+    return he
+
+# Calculate He for each cultivar and each marker
+cultivar_he_list = []
+for cultivar in df_long['ID'].unique():
+    for marker in df_long['MARKER'].unique():
+        he = calculate_cultivar_he(cultivar, marker)
+        cultivar_he_list.append({'ID': cultivar, 'MARKER': marker, 'He': he})
+
+cultivar_he = pd.DataFrame(cultivar_he_list)
+cultivar_he = cultivar_he.groupby('ID')['He'].mean().reset_index()
+
+# Merge Ho and He for each cultivar
+cultivar_heterozygosity = cultivar_ho.merge(cultivar_he, on='ID')
+
+cultivar_heterozygosity.head(9)
+
+
+# Primero, necesito leer el archivo para entender su estructura y contenido.
+# Voy a cargar el archivo y visualizar sus primeras líneas para determinar cómo proceder.
+
+file_path = 'data.txt'
+
+with open(file_path, 'r') as file:
+    lines = file.readlines()
+
+# Mostrando las primeras 10 líneas para tener una idea del formato de los datos
+lines[:10]
+
+
+import pandas as pd
+
+# Cargando los datos en un DataFrame de pandas para su procesamiento
+data_df = pd.read_csv(file_path, sep="\t", header=0)
+
+# Dado que hay muchas columnas vacías, eliminaré las columnas que no contienen datos
+data_df = data_df.dropna(axis=1, how='all')
+
+# Mostrando las primeras filas del DataFrame para revisar su estructura
+data_df.head()
+
+
+
+# Parece que los datos no se cargaron correctamente debido a un problema con el formato del archivo.
+# Intentaré cargarlos nuevamente, ajustando el método de separación para manejar correctamente las columnas.
+
+# Intentaré leer los datos nuevamente, esta vez tratando de identificar correctamente las columnas y los separadores.
+data_df = pd.read_csv(file_path, delim_whitespace=True)
+
+# Mostrando las primeras filas del DataFrame revisado
+data_df.head()
+
